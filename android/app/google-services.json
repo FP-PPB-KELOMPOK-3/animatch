@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "300097983989",
+    "project_id": "fp-ppb-kelompok-3",
+    "storage_bucket": "fp-ppb-kelompok-3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:300097983989:android:14c679414aecc69391bcbc",
+        "android_client_info": {
+          "package_name": "com.example.anime_image_explorer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUSYFNXi4SWGc7A7Z5Z8XPAFhkz27ru8k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
