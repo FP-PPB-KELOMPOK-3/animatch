@@ -1,4 +1,4 @@
-package com.example.anime_image_explorer
+package com.example.animatch
 
 import io.flutter.embedding.android.FlutterActivity
 
