@@ -1,16 +1,9 @@
-# anime_image_explorer
+# Final Project Pemrograman Perangkat Bergerak (C)
 
-A new Flutter project.
+# AniMatch
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| Name                 | NRP        | Class                              |
+| -------------------- | ---------- | ---------------------------------- |
+| Mikhael Abie Saputra | 5025221113 | Pemrograman Perangkat Bergerak (C) |
+| Adnan Abdullah Juan  | 5025221155 | Pemrograman Perangkat Bergerak (C) |
+| Faiq Lidan Baihaqi   | 5025221294 | Pemrograman Perangkat Bergerak (C) |

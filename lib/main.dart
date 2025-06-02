@@ -1,5 +1,5 @@
-import 'package:anime_image_explorer/firebase_options.dart';
-import 'package:anime_image_explorer/screens/home.screen.dart';
+import 'package:animatch/firebase_options.dart';
+import 'package:animatch/screens/home.screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -17,11 +17,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Anime Image Explorer',
+      title: 'AniMatch',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const HomeScreen(title: 'Anime Image Explorer'),
+      home: const HomeScreen(title: 'AniMatch'),
     );
   }
 }
