@@ -1,3 +1,5 @@
+import 'package:animatch/models/card_item.model.dart';
+import 'package:animatch/services/match.service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
@@ -9,12 +11,17 @@ class MatchScreen extends StatefulWidget {
 }
 
 class _MatchScreenState extends State<MatchScreen> {
-  final List<String> imagePaths = [
-    'assets/1.jpg',
-    'assets/2.jpg',
-    'assets/3.jpg',
-    'assets/4.jpg',
-    'assets/5.jpg',
+  final matchService = MatchService();
+
+  final List<CardItem> cards = [
+    CardItem(imagePath: 'assets/1.jpg', description: 'Gambar 1 - kucing lucu'),
+    CardItem(imagePath: 'assets/2.jpg', description: 'Gambar 2 - pantai indah'),
+    CardItem(
+      imagePath: 'assets/3.jpg',
+      description: 'Gambar 3 - gunung tinggi',
+    ),
+    CardItem(imagePath: 'assets/4.jpg', description: 'Gambar 4 - langit senja'),
+    CardItem(imagePath: 'assets/5.jpg', description: 'Gambar 5 - bunga mekar'),
   ];
 
   @override
@@ -34,7 +41,7 @@ class _MatchScreenState extends State<MatchScreen> {
               height: 500,
               width: double.infinity,
               child: CardSwiper(
-                cardsCount: imagePaths.length,
+                cardsCount: cards.length,
                 numberOfCardsDisplayed: 1,
                 isLoop: true,
                 cardBuilder: (context, index, percentX, percentY) {
@@ -46,14 +53,11 @@ class _MatchScreenState extends State<MatchScreen> {
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.white,
                     ),
-                    child: AspectRatio(
-                      aspectRatio: 3 / 4,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          imagePaths[index],
-                          fit: BoxFit.cover,
-                        ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        cards[index].imagePath,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   );
@@ -62,11 +66,23 @@ class _MatchScreenState extends State<MatchScreen> {
                   left: true,
                   right: true,
                 ),
-                onSwipe: (oldIndex, currentIndex, direction) {
+                onSwipe: (oldIndex, newIndex, direction) async {
+                  final card = cards[oldIndex];
+                  // final userId = FirebaseAuth.instance.currentUser?.uid;
+
                   if (direction == CardSwiperDirection.right) {
                     debugPrint("$oldIndex: MASOK");
-                  } else if (direction == CardSwiperDirection.left) {
-                    debugPrint("$oldIndex: NOPE");
+
+                    try {
+                      await matchService.addMatch({
+                        // 'isFavorite': true,
+                        'urlImage': card.imagePath,
+                        // 'userId': userId,
+                      });
+                      debugPrint("Match disimpan!");
+                    } catch (e) {
+                      debugPrint("Gagal menyimpan match: $e");
+                    }
                   }
 
                   return true;

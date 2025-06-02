@@ -1,4 +1,5 @@
 import 'package:animatch/screens/match.screen.dart';
+import 'package:animatch/screens/match_list.screen.dart';
 import 'package:animatch/screens/swipe.screen.dart';
 import 'package:flutter/material.dart';
 
@@ -45,6 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton(
               onPressed: () => _goToScreen(const MatchScreen()),
               child: const Text("Go to Match Screen"),
+            ),
+
+            ElevatedButton(
+              onPressed: () => _goToScreen(MatchesListScreen()),
+              child: const Text("Go to Matches List Screen"),
             ),
 
             ElevatedButton(
