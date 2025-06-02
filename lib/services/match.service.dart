@@ -24,6 +24,14 @@ class MatchService {
   }
 
   // UPDATE
+  Future<void> updateFavorite(String docId, bool newValue) async {
+    await FirebaseFirestore.instance.collection('matches').doc(docId).update({
+      'isFavorite': newValue,
+    });
+  }
 
   // DELETE
+  Future<void> deleteMatch(String docId) async {
+    await FirebaseFirestore.instance.collection('matches').doc(docId).delete();
+  }
 }
