@@ -1,3 +1,4 @@
+import 'package:animatch/screens/swipe.screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,6 +19,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _goToScreen(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,6 +38,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
+            ),
+
+            const SizedBox(height: 40),
+
+            ElevatedButton(
+              onPressed: () => _goToScreen(SwipeScreen()),
+              child: const Text("Go to Swipe Screen"),
             ),
           ],
         ),
