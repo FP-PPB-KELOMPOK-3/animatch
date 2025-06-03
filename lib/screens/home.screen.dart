@@ -31,6 +31,17 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                'account_detail',
+              ); // Navigasi ke halaman profil
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Column(
