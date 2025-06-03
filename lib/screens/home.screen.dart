@@ -1,3 +1,6 @@
+import 'package:animatch/screens/match.screen.dart';
+import 'package:animatch/screens/match_list.screen.dart';
+import 'package:animatch/screens/swipe.screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,6 +19,10 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _counter++;
     });
+  }
+
+  void _goToScreen(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   @override
@@ -44,6 +51,22 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
+            ),
+
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () => _goToScreen(const MatchScreen()),
+              child: const Text("Go to Match Screen"),
+            ),
+
+            ElevatedButton(
+              onPressed: () => _goToScreen(MatchesListScreen()),
+              child: const Text("Go to Matches List Screen"),
+            ),
+
+            ElevatedButton(
+              onPressed: () => _goToScreen(SwipeScreen()),
+              child: const Text("Go to Swipe Screen"),
             ),
           ],
         ),
