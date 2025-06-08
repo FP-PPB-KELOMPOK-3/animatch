@@ -1,15 +1,3 @@
-// This class is for the request data you send to the API
-class MatchApiRequest {
-  final List<String>? tags;
-
-  MatchApiRequest({this.tags});
-
-  // Converts values to key-value pairs as expected by the API
-  Map<String, String> toFormData() {
-    return {'tags': tags.toString()};
-  }
-}
-
 // This class is for the response data you receive from the API
 class MatchResponse {
   final List<String> imageUrls;
