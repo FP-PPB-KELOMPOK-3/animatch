@@ -38,4 +38,24 @@ class NekosiaService {
     }
     return null;
   }
+
+  static Future<MatchResponse?> getAnimeImagesByTags(List<String> tags) async {
+    try {
+      var response = await http.get(
+        Uri.parse(
+          '$baseUrl/images/nothing?count=5&additionalTags=${tags.join(',')}&blacklistedTags=&rating=safe',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Decode the JSON and convert it to Dart object
+        final data = json.decode(response.body);
+
+        return MatchResponse.fromJson(data);
+      }
+    } catch (e) {
+      print("Error: $e");
+    }
+    return null;
+  }
 }
