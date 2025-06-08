@@ -1,0 +1,25 @@
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../models/api.model.dart';
+
+class NekosiaService {
+  static final String baseUrl = 'https://api.nekosia.cat/api/v1';
+
+  static Future<MatchResponse?> getRandomAnimeImages() async {
+    try {
+      var response = await http.get(
+        Uri.parse('$baseUrl/images/random?count=5&rating=safe'),
+      );
+
+      if (response.statusCode == 200) {
+        // Decode the JSON and convert it to Dart object
+        final data = json.decode(response.body);
+
+        return MatchResponse.fromJson(data);
+      }
+    } catch (e) {
+      print("Error: $e");
+    }
+    return null;
+  }
+}
