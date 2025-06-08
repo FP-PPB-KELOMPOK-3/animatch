@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:animatch/services/user.service.dart';
 import 'package:date_field/date_field.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -13,10 +13,11 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _birthdateController = TextEditingController();
-  String? _gender;
-  DateTime? _selectedBirthdate;
+  final _genderController = TextEditingController();
+  String? _selectedGender;
 
   bool _isLoading = false;
   String _errorCode = "";
@@ -38,18 +39,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-      final user = userCredential.user;
-      // Simpan data profil ke Firestore
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-        'username': _usernameController.text,
-        'birthdate': _birthdateController.text,
-        'gender': _gender ?? '',
-        'email': user.email,
-      });
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+      // Simpan data user ke Firestore
+      await UserService().createUser(
+      uid: userCredential.user!.uid,
+      fullName: _fullNameController.text,
+      username: _usernameController.text,
+      email: userCredential.user!.email!,
+      birthDate: DateTime.tryParse(_birthdateController.text) ?? DateTime.now(),
+      gender: _genderController.text,
+    );
       navigateLogin();
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -78,36 +80,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Icon(Icons.lock_outline, size: 100, color: Colors.blue[200]),
               const SizedBox(height: 48),
               TextField(
+                controller: _fullNameController,
+                decoration: const InputDecoration(label: Text('Full Name')),
+              ),
+              TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(label: Text('Username')),
-              ),
-              DateTimeFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Tanggal Lahir',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.event_note),
-                ),
-                initialValue: _selectedBirthdate,
-                firstDate: DateTime(1900),
-                lastDate: DateTime.now(),
-                mode: DateTimeFieldPickerMode.date,
-                onChanged: (DateTime? value) {
-                  setState(() {
-                    _selectedBirthdate = value;
-                    _birthdateController.text = value != null
-                        ? "${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}"
-                        : '';
-                  });
-                },
-              ),
-              DropdownButtonFormField<String>(
-                value: _gender,
-                items: const [
-                  DropdownMenuItem(value: 'Laki-laki', child: Text('Laki-laki')),
-                  DropdownMenuItem(value: 'Perempuan', child: Text('Perempuan')),
-                ],
-                onChanged: (val) => setState(() => _gender = val),
-                decoration: const InputDecoration(label: Text('Jenis Kelamin')),
               ),
               TextField(
                 controller: _emailController,
@@ -118,6 +96,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(label: Text('Password')),
               ),
+              const SizedBox(height: 16),
+              DateTimeFormField(
+                decoration: const InputDecoration(
+                  labelText: 'Birth Date',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.event_note),
+                ),
+                mode: DateTimeFieldPickerMode.date,
+                onChanged: (DateTime? value) {
+                  if (value != null) {
+                    _birthdateController.text = value.toIso8601String();
+                  }
+                },
+              ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _selectedGender,
+              decoration: const InputDecoration(
+                labelText: 'Gender',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: 'Laki-laki',
+                  child: Text('Laki-laki'),
+                ),
+                DropdownMenuItem(
+                  value: 'Perempuan',
+                  child: Text('Perempuan'),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedGender = value;
+                  _genderController.text = value ?? '';
+                });
+              },
+            ),
               const SizedBox(height: 24),
               _errorCode != ""
                   ? Column(
