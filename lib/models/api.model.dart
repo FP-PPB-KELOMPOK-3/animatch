@@ -38,3 +38,22 @@ class MatchResponse {
     return MatchResponse(imageUrls: imageUrls, descriptions: descriptions);
   }
 }
+
+class TagResponse {
+  final List<String> tags;
+
+  TagResponse({required this.tags});
+
+  // Converts JSON response to Dart object
+  factory TagResponse.fromJson(Map<String, dynamic> json) {
+    List<String> tags = [];
+
+    // Check if 'tags' key exists and is a list
+    for (var tag in json['tags']) {
+      tags.add(tag as String);
+    }
+
+    // Return a new instance of TagResponse
+    return TagResponse(tags: tags);
+  }
+}
