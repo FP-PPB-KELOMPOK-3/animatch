@@ -25,10 +25,12 @@ class MatchResponse {
     // Check if 'images' key exists and is a list
     for (var data in json['images']) {
       imageUrls.add(
+        // Use null-aware operator to handle missing keys
         data['image']['compressed']['url'] as String? ??
             'https://www.shutterstock.com/image-vector/default-avatar-anime-girl-profile-600w-661573342.jpg',
       );
       descriptions.add(
+        // Use null-aware operator to handle missing keys
         data['attribution']['copyright'] as String? ??
             'No description available',
       );
