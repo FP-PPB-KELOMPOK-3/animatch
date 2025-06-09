@@ -134,21 +134,26 @@ class _MatchScreenState extends State<MatchScreen> {
                             ),
                           const SizedBox(height: 12),
                           // selected tags
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children:
-                                selectedTags.map((tag) {
-                                  return Chip(
-                                    label: Text(tag),
-                                    onDeleted: () {
-                                      setModalState(() {
-                                        selectedTags.remove(tag);
-                                        tagsService.deleteTag(tag);
-                                      });
-                                    },
-                                  );
-                                }).toList(),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Wrap(
+                              runAlignment: WrapAlignment.start,
+                              alignment: WrapAlignment.start,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children:
+                                  selectedTags.map((tag) {
+                                    return Chip(
+                                      label: Text(tag),
+                                      onDeleted: () {
+                                        setModalState(() {
+                                          selectedTags.remove(tag);
+                                          tagsService.deleteTag(tag);
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                            ),
                           ),
                           const SizedBox(height: 16),
                         ],
