@@ -10,16 +10,22 @@ class MatchResponse {
     List<String> imageUrls = [];
     List<String> descriptions = [];
 
-    // Check if 'images' key exists and is a list
-    for (var data in json['images']) {
+    // Loop as many times as the 'count' key in the JSON
+    for (var i = 0; i < json['count']; i++) {
+      // Check if 'images' key exists and is a list
+      if (json['images'] == null || json['images'].isEmpty) {
+        break; // Exit loop if no images are available
+      }
+
+      // Use null-aware operator to handle missing keys
       imageUrls.add(
-        // Use null-aware operator to handle missing keys
-        data['image']['compressed']['url'] as String? ??
+        json['images'][i]['image']['compressed']['url'] as String? ??
             'https://www.shutterstock.com/image-vector/default-avatar-anime-girl-profile-600w-661573342.jpg',
       );
+
       descriptions.add(
         // Use null-aware operator to handle missing keys
-        data['attribution']['copyright'] as String? ??
+        json['images'][i]['attribution']['copyright'] as String? ??
             'No description available',
       );
     }
