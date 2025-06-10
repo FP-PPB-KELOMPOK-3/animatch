@@ -17,6 +17,9 @@ class MatchResponse {
         break; // Exit loop if no images are available
       }
 
+      if (i >= json['images'].length) {
+        break; // Exit loop if index exceeds available images
+      }
       // Use null-aware operator to handle missing keys
       imageUrls.add(
         json['images'][i]['image']['compressed']['url'] as String? ??
