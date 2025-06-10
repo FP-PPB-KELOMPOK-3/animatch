@@ -39,7 +39,7 @@ class MatchesListScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   child:
                       imageUrl.isNotEmpty
-                          ? Image.asset(
+                          ? Image.network(
                             imageUrl,
                             fit: BoxFit.cover,
                             errorBuilder:
@@ -148,7 +148,7 @@ class MatchesListScreen extends StatelessWidget {
                             ),
                             child:
                                 imageUrl.isNotEmpty
-                                    ? Image.asset(
+                                    ? Image.network(
                                       imageUrl,
                                       fit: BoxFit.cover,
                                       errorBuilder:
