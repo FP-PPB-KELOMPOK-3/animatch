@@ -9,6 +9,7 @@ class TagService {
     try {
       await tagsCollection.add({
         "tagName": tagData['tagName'] ?? 'missing-tag',
+        "blacklisted": false,
         "userId": tagData['userId'] ?? '',
         "createdAt": tagData['createdAt'] ?? FieldValue.serverTimestamp(),
       });
@@ -23,6 +24,18 @@ class TagService {
   }
 
   // UPDATE
+  Future<void> blacklistTag(String tagName, bool blacklisted) async {
+    try {
+      final query =
+          await tagsCollection.where('tagName', isEqualTo: tagName).get();
+
+      for (var doc in query.docs) {
+        await doc.reference.update({'blacklisted': blacklisted});
+      }
+    } catch (e) {
+      print("Error updating tag: $e");
+    }
+  }
 
   // DELETE
   Future<void> deleteTag(String tagName) async {
