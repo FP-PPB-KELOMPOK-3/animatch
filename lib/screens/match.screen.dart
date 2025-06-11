@@ -1,7 +1,9 @@
 import 'package:animatch/models/card_item.model.dart';
+import 'package:animatch/models/tag_item.model.dart';
 import 'package:animatch/services/match.service.dart';
 import 'package:animatch/services/tag.service.dart';
 import 'package:animatch/services/nekosia.service.dart';
+import 'package:animatch/widgets/tapablechip.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
@@ -17,7 +19,7 @@ class _MatchScreenState extends State<MatchScreen> {
   final tagsService = TagService();
 
   List<CardItem> cards = [];
-  List<String> selectedTags = [];
+  List<TagItem> selectedTags = [];
   int swiperKey = 0;
 
   bool _isBottomSheetOpen = false;
@@ -30,7 +32,14 @@ class _MatchScreenState extends State<MatchScreen> {
     final allTags = tagsResponse?.tags ?? [];
     final selectedTagsFuture =
         tagsService.getTagsStream().map((snapshot) {
-          return snapshot.docs.map((doc) => doc['tagName'] as String).toList();
+          return snapshot.docs
+              .map(
+                (doc) => TagItem(
+                  tagName: doc['tagName'],
+                  blacklisted: doc['blacklisted'],
+                ),
+              )
+              .toList();
         }).first;
     selectedTags = await selectedTagsFuture;
 
@@ -39,7 +48,7 @@ class _MatchScreenState extends State<MatchScreen> {
       isScrollControlled: true,
       builder: (context) {
         String search = '';
-        return FutureBuilder<List<String>>(
+        return FutureBuilder<List<TagItem>>(
           future: selectedTagsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -76,7 +85,7 @@ class _MatchScreenState extends State<MatchScreen> {
                           // search field
                           TextField(
                             decoration: const InputDecoration(
-                              labelText: 'Add tags',
+                              labelText: 'Filter by:',
                               prefixIcon: Icon(Icons.search),
                             ),
                             onChanged: (value) {
@@ -116,7 +125,12 @@ class _MatchScreenState extends State<MatchScreen> {
                                             title: Text(tag),
                                             onTap: () {
                                               setModalState(() {
-                                                selectedTags.add(tag);
+                                                selectedTags.add(
+                                                  TagItem(
+                                                    tagName: tag,
+                                                    blacklisted: false,
+                                                  ),
+                                                );
                                                 tagsService.addTag({
                                                   'tagName': tag,
                                                   'userId':
@@ -143,12 +157,34 @@ class _MatchScreenState extends State<MatchScreen> {
                               runSpacing: 8,
                               children:
                                   selectedTags.map((tag) {
-                                    return Chip(
-                                      label: Text(tag),
+                                    return tappableChip(
+                                      label: tag.tagName,
+                                      backgroundColor:
+                                          tag.blacklisted
+                                              ? Colors.red
+                                              : Colors.white,
+                                      deleteIcon: const Icon(Icons.close),
+                                      onTap: () {
+                                        debugPrint(
+                                          "Tapped on tag: ${tag.tagName}",
+                                        );
+                                        setModalState(() {
+                                          tagsService.blacklistTag(
+                                            tag.tagName,
+                                            !tag.blacklisted,
+                                          );
+                                          selectedTags[selectedTags.indexOf(
+                                            tag,
+                                          )] = TagItem(
+                                            tagName: tag.tagName,
+                                            blacklisted: !tag.blacklisted,
+                                          );
+                                        });
+                                      },
                                       onDeleted: () {
                                         setModalState(() {
                                           selectedTags.remove(tag);
-                                          tagsService.deleteTag(tag);
+                                          tagsService.deleteTag(tag.tagName);
                                         });
                                       },
                                     );
@@ -273,10 +309,22 @@ class _MatchScreenState extends State<MatchScreen> {
                           }
                         });
                       } else {
-                        debugPrint("Using selected tags: $selectedTags");
-                        NekosiaService.getAnimeImagesByTags(selectedTags).then((
-                          response,
-                        ) {
+                        List<String> selectedTagNames =
+                            selectedTags
+                                .where((tag) => !tag.blacklisted)
+                                .map((tag) => tag.tagName)
+                                .toList();
+                        List<String> blacklistedTagNames =
+                            selectedTags
+                                .where((tag) => tag.blacklisted)
+                                .map((tag) => tag.tagName)
+                                .toList();
+                        debugPrint("Using selected tags: $selectedTagNames");
+                        debugPrint("Blacklisted tags: $blacklistedTagNames");
+                        NekosiaService.getAnimeImagesByTags(
+                          selectedTagNames,
+                          blacklistedTagNames,
+                        ).then((response) {
                           if (response != null) {
                             setState(() {
                               cards = List.generate(
