@@ -3,7 +3,7 @@ import 'package:animatch/models/tag_item.model.dart';
 import 'package:animatch/services/match.service.dart';
 import 'package:animatch/services/tag.service.dart';
 import 'package:animatch/services/nekosia.service.dart';
-import 'package:animatch/widgets/tapablechip.widget.dart';
+// import 'package:animatch/widgets/tapablechip.widget.dart'; // Jika tidak dipakai bisa dihapus
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
@@ -15,361 +15,324 @@ class MatchScreen extends StatefulWidget {
 }
 
 class _MatchScreenState extends State<MatchScreen> {
+  final CardSwiperController _controller = CardSwiperController();
   final matchService = MatchService();
   final tagsService = TagService();
 
   List<CardItem> cards = [];
   List<TagItem> selectedTags = [];
-  int swiperKey = 0;
+  bool _isLoading = true;
 
-  bool _isBottomSheetOpen = false;
+  @override
+  void initState() {
+    super.initState();
+    _fetchCards();
+  }
 
-  void _showTagBottomSheet() async {
-    if (_isBottomSheetOpen) return; // Prevent multiple modals
-    _isBottomSheetOpen = true;
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
-    final tagsResponse = await NekosiaService.getTags();
-    final allTags = tagsResponse?.tags ?? [];
-    final selectedTagsFuture =
-        tagsService.getTagsStream().map((snapshot) {
-          return snapshot.docs
-              .map(
-                (doc) => TagItem(
-                  tagName: doc['tagName'],
-                  blacklisted: doc['blacklisted'],
-                ),
-              )
-              .toList();
-        }).first;
-    selectedTags = await selectedTagsFuture;
+  void _fetchCards() {
+    setState(() {
+      _isLoading = true;
+    });
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        String search = '';
-        return FutureBuilder<List<TagItem>>(
-          future: selectedTagsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return StatefulBuilder(
-              builder: (context, setModalState) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                    left: 16,
-                    right: 16,
-                    top: 16,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: MediaQuery.of(context).size.height * 0.35,
-                      maxHeight: MediaQuery.of(context).size.height * 0.7,
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Drag symbol
-                          Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[400],
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          // search field
-                          TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'Filter by:',
-                              prefixIcon: Icon(Icons.search),
-                            ),
-                            onChanged: (value) {
-                              setModalState(() => search = value);
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          // Autocomplete suggestions as a vertical list
-                          if (search.isNotEmpty)
-                            Container(
-                              constraints: BoxConstraints(
-                                maxHeight: 200, // Adjust as needed
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                              child: ListView(
-                                shrinkWrap: true,
-                                children:
-                                    allTags
-                                        .where(
-                                          (tag) =>
-                                              tag.toLowerCase().contains(
-                                                search.toLowerCase(),
-                                              ) &&
-                                              !selectedTags.contains(tag),
-                                        )
-                                        .map(
-                                          (tag) => ListTile(
-                                            title: Text(tag),
-                                            onTap: () {
-                                              setModalState(() {
-                                                selectedTags.add(
-                                                  TagItem(
-                                                    tagName: tag,
-                                                    blacklisted: false,
-                                                  ),
-                                                );
-                                                tagsService.addTag({
-                                                  'tagName': tag,
-                                                  'userId':
-                                                      '', // Replace with actual user ID
-                                                  'createdAt': DateTime.now(),
-                                                });
-                                                search =
-                                                    ''; // Clear search after selection
-                                              });
-                                            },
-                                          ),
-                                        )
-                                        .toList(),
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                          // selected tags
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Wrap(
-                              runAlignment: WrapAlignment.start,
-                              alignment: WrapAlignment.start,
-                              spacing: 8,
-                              runSpacing: 8,
-                              children:
-                                  selectedTags.map((tag) {
-                                    return tappableChip(
-                                      label: tag.tagName,
-                                      backgroundColor:
-                                          tag.blacklisted
-                                              ? Colors.red
-                                              : Colors.white,
-                                      deleteIcon: const Icon(Icons.close),
-                                      onTap: () {
-                                        debugPrint(
-                                          "Tapped on tag: ${tag.tagName}",
-                                        );
-                                        setModalState(() {
-                                          tagsService.blacklistTag(
-                                            tag.tagName,
-                                            !tag.blacklisted,
-                                          );
-                                          selectedTags[selectedTags.indexOf(
-                                            tag,
-                                          )] = TagItem(
-                                            tagName: tag.tagName,
-                                            blacklisted: !tag.blacklisted,
-                                          );
-                                        });
-                                      },
-                                      onDeleted: () {
-                                        setModalState(() {
-                                          selectedTags.remove(tag);
-                                          tagsService.deleteTag(tag.tagName);
-                                        });
-                                      },
-                                    );
-                                  }).toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    ),
+    final future =
+        selectedTags.any((tag) => !tag.blacklisted)
+            ? NekosiaService.getAnimeImagesByTags(
+              selectedTags
+                  .where((t) => !t.blacklisted)
+                  .map((t) => t.tagName)
+                  .toList(),
+              selectedTags
+                  .where((t) => t.blacklisted)
+                  .map((t) => t.tagName)
+                  .toList(),
+            )
+            : NekosiaService.getRandomAnimeImages();
+
+    future
+        .then((response) {
+          if (mounted) {
+            // Pastikan widget masih ada di tree
+            if (response != null && response.imageUrls.isNotEmpty) {
+              setState(() {
+                cards = List.generate(
+                  response.imageUrls.length,
+                  (i) => CardItem(
+                    imagePath: response.imageUrls[i],
+                    description:
+                        response.descriptions.isNotEmpty
+                            ? response.descriptions[i]
+                            : "Anime Character",
                   ),
                 );
-              },
-            );
-          },
-        );
-      },
-    );
+                _isLoading = false;
+              });
+            } else {
+              setState(() {
+                cards = [];
+                _isLoading = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("No images found with the selected tags."),
+                ),
+              );
+            }
+          }
+        })
+        .catchError((error) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+          debugPrint("Error fetching cards: $error");
+        });
+  }
 
-    _isBottomSheetOpen = false; // Reset the flag when closed
+  Widget _buildTagChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  // --- LANGKAH 1: FUNGSI INI TIDAK LAGI DIPERLUKAN ---
+  // Widget _buildActionButtons() { ... }
+
+  void _showTagBottomSheet() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            height: 300,
+            child: Column(
+              children: [
+                const Text(
+                  "Filter by Tags",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "UI untuk memilih tag akan ditampilkan di sini.",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _fetchCards();
+                  },
+                  child: const Text("Apply Filters"),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  // --- LANGKAH 2: BUAT WIDGET BARU UNTUK TAMPILAN KARTU HABIS ---
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            "All cards have been swiped!",
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.refresh),
+            label: const Text("Search Again"),
+            onPressed: _fetchCards, // Panggil fungsi fetch untuk memuat ulang
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xfff43f5e), // Warna primer
+              foregroundColor: Colors.white, // Warna teks
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 21, 21, 21),
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Match Screen'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Animatch',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xfff43f5e),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showTagBottomSheet,
+          ),
+        ],
+        iconTheme: const IconThemeData(color: Color(0xfff43f5e)),
       ),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onVerticalDragUpdate: (details) {
-          if (details.primaryDelta! < -5) {
-            _showTagBottomSheet();
-          }
-        },
-        child: Stack(
+      body: SafeArea(
+        top: false,
+        child: Column(
           children: [
-            Center(
-              child: Column(
-                children: <Widget>[
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    height: 500,
-                    width: double.infinity,
-                    child:
-                        cards.isEmpty
-                            ? const Center(
-                              child: Text("Start matching to show cards"),
-                            )
-                            : CardSwiper(
-                              key: ValueKey(swiperKey),
-                              cardsCount: cards.length,
-                              numberOfCardsDisplayed: 1,
-                              isLoop: false,
-                              cardBuilder: (
-                                context,
-                                index,
-                                percentX,
-                                percentY,
-                              ) {
-                                return Container(
-                                  width: double.infinity,
+            Expanded(
+              child:
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      // --- LANGKAH 3: GANTI TAMPILAN KARTU KOSONG ---
+                      : cards.isEmpty
+                      ? _buildEmptyState() // Gunakan widget yang baru dibuat
+                      : CardSwiper(
+                        isLoop: false,
+                        controller: _controller,
+                        cardsCount: cards.length,
+                        onSwipe: _onSwipe,
+                        // --- LANGKAH 4: UPDATE onEnd CALLBACK ---
+                        onEnd: () {
+                          // Saat kartu habis, panggil setState untuk mengosongkan list
+                          // Ini akan memicu build ulang dan menampilkan _buildEmptyState
+                          setState(() {
+                            cards.clear();
+                          });
+                          debugPrint(
+                            "All cards swiped, showing refresh button.",
+                          );
+                        },
+                        numberOfCardsDisplayed: 2,
+                        backCardOffset: const Offset(0, 40),
+                        padding: const EdgeInsets.only(top: 10),
+                        cardBuilder: (context, index, percentX, percentY) {
+                          final card = cards[index];
+                          return Stack(
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(22),
+                                  image: DecorationImage(
+                                    image: NetworkImage(card.imagePath),
+                                    fit: BoxFit.cover,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Container(
+                                  height: 200,
                                   margin: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                   ),
                                   decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.black,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.white,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(
-                                      cards[index].imagePath,
-                                      fit: BoxFit.cover,
+                                    borderRadius: BorderRadius.circular(22),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.black.withOpacity(0.9),
+                                      ],
                                     ),
                                   ),
-                                );
-                              },
-                              allowedSwipeDirection:
-                                  const AllowedSwipeDirection.only(
-                                    left: true,
-                                    right: true,
+                                ),
+                              ),
+                              Align(
+                                alignment: Alignment.bottomLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    40,
+                                    0,
+                                    40,
+                                    40,
                                   ),
-                              onSwipe: (oldIndex, newIndex, direction) async {
-                                final card = cards[oldIndex];
-                                if (direction == CardSwiperDirection.right) {
-                                  debugPrint("$oldIndex: MASOK");
-                                  try {
-                                    await matchService.addMatch({
-                                      'urlImage': card.imagePath,
-                                    });
-                                    debugPrint("Match disimpan!");
-                                  } catch (e) {
-                                    debugPrint("Gagal menyimpan match: $e");
-                                  }
-                                }
-                                return true;
-                              },
-                            ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (selectedTags.isEmpty) {
-                        debugPrint("No tags selected, fetching random images");
-                        NekosiaService.getRandomAnimeImages().then((response) {
-                          if (response != null) {
-                            setState(() {
-                              cards = List.generate(
-                                response.imageUrls.length,
-                                (i) => CardItem(
-                                  imagePath: response.imageUrls[i],
-                                  description: response.descriptions[i],
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        spacing: 8.0,
+                                        runSpacing: 8.0,
+                                        children: [
+                                          _buildTagChip(
+                                            'Anime Fan',
+                                            Colors.white.withOpacity(0.2),
+                                          ),
+                                          _buildTagChip(
+                                            'Gamer',
+                                            Colors.pink.withOpacity(0.3),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              );
-                              swiperKey++;
-                            });
-                          }
-                        });
-                      } else {
-                        List<String> selectedTagNames =
-                            selectedTags
-                                .where((tag) => !tag.blacklisted)
-                                .map((tag) => tag.tagName)
-                                .toList();
-                        List<String> blacklistedTagNames =
-                            selectedTags
-                                .where((tag) => tag.blacklisted)
-                                .map((tag) => tag.tagName)
-                                .toList();
-                        debugPrint("Using selected tags: $selectedTagNames");
-                        debugPrint("Blacklisted tags: $blacklistedTagNames");
-                        NekosiaService.getAnimeImagesByTags(
-                          selectedTagNames,
-                          blacklistedTagNames,
-                        ).then((response) {
-                          if (response != null) {
-                            setState(() {
-                              cards = List.generate(
-                                response.imageUrls.length,
-                                (i) => CardItem(
-                                  imagePath: response.imageUrls[i],
-                                  description: response.descriptions[i],
-                                ),
-                              );
-                              swiperKey++;
-                            });
-                          }
-                        });
-                      }
-                    },
-                    child: const Text("Start Matching"),
-                  ),
-                ],
-              ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
             ),
-            // Optionally, keep the visual drag handle at the bottom
-            Container(
-              width: double.infinity,
-              alignment: Alignment.center,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const Icon(
-                      Icons.keyboard_arrow_up,
-                      size: 32,
-                      color: Colors.grey,
-                    ),
-                    const Text(
-                      "Swipe up to search tags",
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // --- LANGKAH 1: HAPUS PEMANGGILAN TOMBOL AKSI ---
+            // if (!_isLoading && cards.isNotEmpty) _buildActionButtons(),
           ],
         ),
       ),
     );
+  }
+
+  bool _onSwipe(
+    int previousIndex,
+    int? newIndex,
+    CardSwiperDirection direction,
+  ) {
+    final card = cards[previousIndex];
+    debugPrint('Swiped ${direction.name} on ${card.description}');
+    if (direction == CardSwiperDirection.right) {
+      matchService
+          .addMatch({'urlImage': card.imagePath, 'createdAt': DateTime.now()})
+          .then((_) => debugPrint("Match saved!"))
+          .catchError((e) => debugPrint("Failed to save match: $e"));
+    }
+    return true;
   }
 }
