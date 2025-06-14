@@ -2,13 +2,19 @@
 class MatchResponse {
   final List<String> imageUrls;
   final List<String> descriptions;
+  final List<List<String>> tags;
 
-  MatchResponse({required this.imageUrls, required this.descriptions});
+  MatchResponse({
+    required this.imageUrls,
+    required this.descriptions,
+    required this.tags,
+  });
 
   // Converts JSON response to Dart object
   factory MatchResponse.fromJson(Map<String, dynamic> json) {
     List<String> imageUrls = [];
     List<String> descriptions = [];
+    List<List<String>> tags = [];
 
     // Loop as many times as the 'count' key in the JSON
     for (var i = 0; i < json['count']; i++) {
@@ -31,10 +37,16 @@ class MatchResponse {
         json['images'][i]['attribution']['copyright'] as String? ??
             'No description available',
       );
+
+      tags.add(json['images'][i]['tags'] as List<String>? ?? []);
     }
 
     // Return a new instance of MatchResponse
-    return MatchResponse(imageUrls: imageUrls, descriptions: descriptions);
+    return MatchResponse(
+      imageUrls: imageUrls,
+      descriptions: descriptions,
+      tags: tags,
+    );
   }
 }
 
