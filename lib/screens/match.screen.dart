@@ -1,11 +1,12 @@
+import 'package:animatch/models/api.model.dart';
 import 'package:animatch/models/card_item.model.dart';
 import 'package:animatch/models/tag_item.model.dart';
 import 'package:animatch/services/match.service.dart';
 import 'package:animatch/services/tag.service.dart';
 import 'package:animatch/services/nekosia.service.dart';
-// import 'package:animatch/widgets/tapablechip.widget.dart'; // Jika tidak dipakai bisa dihapus
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import 'dart:math' as math;
 
 class MatchScreen extends StatefulWidget {
   const MatchScreen({super.key});
@@ -26,7 +27,29 @@ class _MatchScreenState extends State<MatchScreen> {
   @override
   void initState() {
     super.initState();
+    _loadInitialData();
+  }
+
+  // Memuat data filter yang tersimpan, lalu memuat kartu
+  Future<void> _loadInitialData() async {
+    await _loadSelectedTags();
     _fetchCards();
+  }
+
+  // Mengambil daftar tag yang sudah dipilih dari service
+  Future<void> _loadSelectedTags() async {
+    final initialSelectedTags = await tagsService.getTagsStream().first;
+    if (mounted) {
+      setState(() {
+        selectedTags =
+            initialSelectedTags.docs.map((doc) {
+              return TagItem(
+                tagName: doc['tagName'],
+                blacklisted: doc['blacklisted'] ?? false,
+              );
+            }).toList();
+      });
+    }
   }
 
   @override
@@ -35,11 +58,13 @@ class _MatchScreenState extends State<MatchScreen> {
     super.dispose();
   }
 
+  /// Mengambil data kartu dari API berdasarkan filter `selectedTags`
   void _fetchCards() {
     setState(() {
       _isLoading = true;
     });
 
+    // Logika ini memilih service yang tepat berdasarkan state selectedTags
     final future =
         selectedTags.any((tag) => !tag.blacklisted)
             ? NekosiaService.getAnimeImagesByTags(
@@ -57,19 +82,20 @@ class _MatchScreenState extends State<MatchScreen> {
     future
         .then((response) {
           if (mounted) {
-            // Pastikan widget masih ada di tree
             if (response != null && response.imageUrls.isNotEmpty) {
               setState(() {
-                cards = List.generate(
-                  response.imageUrls.length,
-                  (i) => CardItem(
-                    imagePath: response.imageUrls[i],
-                    description:
-                        response.descriptions.isNotEmpty
-                            ? response.descriptions[i]
-                            : "Anime Character",
-                  ),
-                );
+                // Mengubah objek API menjadi objek UI (CardItem)
+                cards =
+                    response.imageUrls.map((url) {
+                      return CardItem(
+                        imagePath: url,
+                        description:
+                            response.descriptions[response.imageUrls.indexOf(
+                              url,
+                            )],
+                        tags: response.tags[response.imageUrls.indexOf(url)],
+                      );
+                    }).toList();
                 _isLoading = false;
               });
             } else {
@@ -95,6 +121,7 @@ class _MatchScreenState extends State<MatchScreen> {
         });
   }
 
+  /// Helper untuk membangun UI Chip
   Widget _buildTagChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -113,47 +140,186 @@ class _MatchScreenState extends State<MatchScreen> {
     );
   }
 
-  // --- LANGKAH 1: FUNGSI INI TIDAK LAGI DIPERLUKAN ---
-  // Widget _buildActionButtons() { ... }
-
+  /// Menampilkan bottom sheet untuk memilih dan mengelola filter tag
   void _showTagBottomSheet() async {
+    final tagsResponse = await NekosiaService.getTags();
+    final allTags = tagsResponse?.tags ?? [];
+
+    await _loadSelectedTags(); // Selalu load state terbaru saat membuka sheet
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.grey[900],
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            height: 300,
-            child: Column(
-              children: [
-                const Text(
-                  "Filter by Tags",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            String searchQuery = '';
+            final availableTags =
+                allTags.where((tag) {
+                  final isNotSelected =
+                      !selectedTags.any((selected) => selected.tagName == tag);
+                  if (searchQuery.isEmpty) return isNotSelected;
+                  return isNotSelected &&
+                      tag.toLowerCase().contains(searchQuery.toLowerCase());
+                }).toList();
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  "UI untuk memilih tag akan ditampilkan di sini.",
-                  style: TextStyle(color: Colors.white70),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[600],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Selected Tags",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      // "Tap to blacklist, long press to remove.",
+                      "Long press to remove.",
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    selectedTags.isEmpty
+                        ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Text(
+                            "No tags selected yet.",
+                            style: TextStyle(color: Colors.grey[500]),
+                          ),
+                        )
+                        : Wrap(
+                          spacing: 8.0,
+                          runSpacing: 4.0,
+                          children:
+                              selectedTags.map((tag) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    setModalState(() {
+                                      tag.blacklisted = !tag.blacklisted;
+                                      tagsService.blacklistTag(
+                                        tag.tagName,
+                                        tag.blacklisted,
+                                      );
+                                    });
+                                  },
+                                  onLongPress: () {
+                                    setModalState(() {
+                                      tagsService.deleteTag(tag.tagName);
+                                      selectedTags.remove(tag);
+                                    });
+                                  },
+                                  child: Chip(
+                                    label: Text(tag.tagName),
+                                    backgroundColor:
+                                        tag.blacklisted
+                                            ? Colors.red[700]
+                                            : const Color(0xfff43f5e),
+                                    labelStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      onChanged:
+                          (value) => setModalState(() => searchQuery = value),
+                      decoration: InputDecoration(
+                        hintText: 'Search for tags to add...',
+                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[800],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child:
+                          availableTags.isEmpty
+                              ? Center(
+                                child: Text(
+                                  "No more tags to show or not found.",
+                                  style: TextStyle(color: Colors.grey[500]),
+                                ),
+                              )
+                              : ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: availableTags.length,
+                                itemBuilder: (context, index) {
+                                  final tag = availableTags[index];
+                                  return ListTile(
+                                    title: Text(
+                                      tag,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      setModalState(() {
+                                        final newTag = TagItem(tagName: tag);
+                                        selectedTags.add(newTag);
+                                        tagsService.addTag({
+                                          'tagName': newTag.tagName,
+                                          'userId': '',
+                                          'blacklisted': newTag.blacklisted,
+                                          'createdAt': DateTime.now(),
+                                        });
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _fetchCards();
-                  },
-                  child: const Text("Apply Filters"),
-                ),
-              ],
-            ),
-          ),
-    );
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      debugPrint("Applying filters...");
+      _fetchCards();
+    });
   }
 
-  // --- LANGKAH 2: BUAT WIDGET BARU UNTUK TAMPILAN KARTU HABIS ---
+  /// Widget yang ditampilkan saat kartu habis atau tidak ada
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -167,10 +333,10 @@ class _MatchScreenState extends State<MatchScreen> {
           ElevatedButton.icon(
             icon: const Icon(Icons.refresh),
             label: const Text("Search Again"),
-            onPressed: _fetchCards, // Panggil fungsi fetch untuk memuat ulang
+            onPressed: _fetchCards,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xfff43f5e), // Warna primer
-              foregroundColor: Colors.white, // Warna teks
+              backgroundColor: const Color(0xfff43f5e),
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
@@ -209,26 +375,17 @@ class _MatchScreenState extends State<MatchScreen> {
               child:
                   _isLoading
                       ? const Center(child: CircularProgressIndicator())
-                      // --- LANGKAH 3: GANTI TAMPILAN KARTU KOSONG ---
                       : cards.isEmpty
-                      ? _buildEmptyState() // Gunakan widget yang baru dibuat
+                      ? _buildEmptyState()
                       : CardSwiper(
                         isLoop: false,
                         controller: _controller,
                         cardsCount: cards.length,
                         onSwipe: _onSwipe,
-                        // --- LANGKAH 4: UPDATE onEnd CALLBACK ---
                         onEnd: () {
-                          // Saat kartu habis, panggil setState untuk mengosongkan list
-                          // Ini akan memicu build ulang dan menampilkan _buildEmptyState
-                          setState(() {
-                            cards.clear();
-                          });
-                          debugPrint(
-                            "All cards swiped, showing refresh button.",
-                          );
+                          setState(() => cards.clear());
                         },
-                        numberOfCardsDisplayed: 2,
+                        numberOfCardsDisplayed: math.min(3, cards.length),
                         backCardOffset: const Offset(0, 40),
                         padding: const EdgeInsets.only(top: 10),
                         cardBuilder: (context, index, percentX, percentY) {
@@ -288,20 +445,27 @@ class _MatchScreenState extends State<MatchScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
+                                      Text(
+                                        card.description,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                       const SizedBox(height: 12),
                                       Wrap(
                                         spacing: 8.0,
                                         runSpacing: 8.0,
-                                        children: [
-                                          _buildTagChip(
-                                            'Anime Fan',
-                                            Colors.white.withOpacity(0.2),
-                                          ),
-                                          _buildTagChip(
-                                            'Gamer',
-                                            Colors.pink.withOpacity(0.3),
-                                          ),
-                                        ],
+                                        children:
+                                            card.tags.map((tag) {
+                                              return _buildTagChip(
+                                                tag,
+                                                Colors.white.withOpacity(0.2),
+                                              );
+                                            }).toList(),
                                       ),
                                     ],
                                   ),
@@ -312,19 +476,19 @@ class _MatchScreenState extends State<MatchScreen> {
                         },
                       ),
             ),
-            // --- LANGKAH 1: HAPUS PEMANGGILAN TOMBOL AKSI ---
-            // if (!_isLoading && cards.isNotEmpty) _buildActionButtons(),
           ],
         ),
       ),
     );
   }
 
+  /// Dipanggil setiap kali kartu di-swipe
   bool _onSwipe(
     int previousIndex,
     int? newIndex,
     CardSwiperDirection direction,
   ) {
+    if (previousIndex >= cards.length) return false; // Pengaman
     final card = cards[previousIndex];
     debugPrint('Swiped ${direction.name} on ${card.description}');
     if (direction == CardSwiperDirection.right) {
