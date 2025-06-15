@@ -140,7 +140,6 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   /// Menampilkan bottom sheet untuk memilih dan mengelola filter tag
-  /// Menampilkan bottom sheet untuk memilih dan mengelola filter tag
   void _showTagBottomSheet() async {
     final tagsResponse = await NekosiaService.getTags();
     final allTags = tagsResponse?.tags ?? [];
@@ -204,7 +203,7 @@ class _MatchScreenState extends State<MatchScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Tap to blacklist, long press to remove.",
+                      "Long press to remove.",
                       style: TextStyle(color: Colors.grey[400], fontSize: 12),
                     ),
                     const SizedBox(height: 8),
