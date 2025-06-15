@@ -41,11 +41,22 @@ dependencies:
   flutter_card_swiper: ^7.0.2
   date_field: ^6.0.3+1
   http: ^1.4.0
+  flutter_native_splash: ^2.4.6
 
 flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/animatch_logo.png"
+
+flutter_native_splash:
+  color: "#0E1014"
+  # image: assets/animatch_logo.png
+  android: true
+  ios: false
+  web: false
+
+  android_12:
+    image: assets/animatch_logo_android.png
 
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
