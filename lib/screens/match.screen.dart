@@ -3,6 +3,7 @@ import 'package:animatch/models/tag_item.model.dart';
 import 'package:animatch/services/match.service.dart';
 import 'package:animatch/services/tag.service.dart';
 import 'package:animatch/services/nekosia.service.dart';
+import 'package:animatch/widgets/drawer.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'dart:math' as math;
@@ -380,6 +381,7 @@ class _MatchScreenState extends State<MatchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 21, 21, 21),
+      drawer: AppDrawer(),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

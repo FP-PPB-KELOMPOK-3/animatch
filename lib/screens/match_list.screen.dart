@@ -2,10 +2,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:animatch/services/match.service.dart';
+import 'package:animatch/widgets/drawer.widget.dart';
 
-class MatchesListScreen extends StatelessWidget {
-  MatchesListScreen({super.key});
+class MatchesListScreen extends StatefulWidget {
+  const MatchesListScreen({super.key});
 
+  @override
+  State<MatchesListScreen> createState() => _MatchesListScreenState();
+}
+
+class _MatchesListScreenState extends State<MatchesListScreen> {
   final MatchService matchService = MatchService();
 
   // --- PERUBAHAN 3: Dialog didesain ulang agar lebih modern ---
@@ -150,6 +156,7 @@ class MatchesListScreen extends StatelessWidget {
         21,
         21,
       ), // Latar belakang gelap
+      drawer: AppDrawer(),
       appBar: AppBar(
         title: const Text('My Matches'),
         backgroundColor: Colors.transparent, // AppBar transparan

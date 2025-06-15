@@ -1,4 +1,5 @@
 import 'package:animatch/services/user.service.dart';
+import 'package:animatch/widgets/drawer.widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +12,7 @@ class AccountDetail extends StatefulWidget {
 
 class _AccountDetailState extends State<AccountDetail> {
   final UserService _userService = UserService();
-  final _formKey = GlobalKey<FormState>(); 
+  final _formKey = GlobalKey<FormState>();
   late String uid;
 
   // Controllers untuk setiap field input
@@ -46,7 +47,7 @@ class _AccountDetailState extends State<AccountDetail> {
     final userDoc = await _userService.getUserById(uid);
     if (userDoc.exists) {
       final userData = userDoc.data() as Map<String, dynamic>;
-      
+
       _originalFullName = userData['fullName'] ?? '';
       _originalUsername = userData['username'] ?? '';
 
@@ -71,15 +72,21 @@ class _AccountDetailState extends State<AccountDetail> {
 
     try {
       await _userService.updateUser(uid, updatedData);
-      
-      await _loadUserData(); 
+
+      await _loadUserData();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Failed to update profile: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -90,23 +97,32 @@ class _AccountDetailState extends State<AccountDetail> {
   Future<void> _deleteAccount() async {
     bool? confirmDelete = await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F1F1F),
-        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
-        contentTextStyle: const TextStyle(color: Colors.white70),
-        title: const Text('Delete Account'),
-        content: const Text('Are you sure? This action is permanent and cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1F1F1F),
+            titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
+            contentTextStyle: const TextStyle(color: Colors.white70),
+            title: const Text('Delete Account'),
+            content: const Text(
+              'Are you sure? This action is permanent and cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
 
     if (confirmDelete != true) return;
@@ -123,53 +139,73 @@ class _AccountDetailState extends State<AccountDetail> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account deleted successfully.'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Account deleted successfully.'),
+              backgroundColor: Colors.green,
+            ),
           );
           Navigator.pushNamedAndRemoveUntil(context, 'login', (route) => false);
         }
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This operation is sensitive. Please log out and log back in to delete your account.'), backgroundColor: Colors.orange),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This operation is sensitive. Please log out and log back in to delete your account.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
         );
       } else {
-         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete account: ${e.message}'), backgroundColor: Colors.red),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete account: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An unexpected error occurred: $e'), backgroundColor: Colors.red),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
-       if(mounted) {
+      if (mounted) {
         setState(() => _isLoading = false);
-       }
+      }
     }
   }
-
 
   void _logout() async {
     bool? confirmLogout = await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F1F1F),
-        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
-        contentTextStyle: const TextStyle(color: Colors.white70),
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1F1F1F),
+            titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
+            contentTextStyle: const TextStyle(color: Colors.white70),
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text(
+                  'Logout',
+                  style: TextStyle(color: Color(0xfff43f5e)),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout', style: TextStyle(color: Color(0xfff43f5e))),
-          ),
-        ],
-      ),
     );
 
     if (confirmLogout == true) {
@@ -179,11 +215,15 @@ class _AccountDetailState extends State<AccountDetail> {
       }
     }
   }
-  
+
   void _showEditProfileSheet() {
     final sheetFormKey = GlobalKey<FormState>();
-    final sheetFullNameController = TextEditingController(text: _originalFullName);
-    final sheetUsernameController = TextEditingController(text: _originalUsername);
+    final sheetFullNameController = TextEditingController(
+      text: _originalFullName,
+    );
+    final sheetUsernameController = TextEditingController(
+      text: _originalUsername,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -198,7 +238,7 @@ class _AccountDetailState extends State<AccountDetail> {
             bottom: MediaQuery.of(context).viewInsets.bottom,
             left: 24,
             right: 24,
-            top: 24
+            top: 24,
           ),
           child: Form(
             key: sheetFormKey,
@@ -216,12 +256,26 @@ class _AccountDetailState extends State<AccountDetail> {
                 const SizedBox(height: 24),
                 const Text(
                   'Edit Profile',
-                  style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 24),
-                _buildInfoField(label: 'Full Name', controller: sheetFullNameController, icon: Icons.person_outline, isEditing: true),
+                _buildInfoField(
+                  label: 'Full Name',
+                  controller: sheetFullNameController,
+                  icon: Icons.person_outline,
+                  isEditing: true,
+                ),
                 const SizedBox(height: 16),
-                _buildInfoField(label: 'Username', controller: sheetUsernameController, icon: Icons.alternate_email, isEditing: true),
+                _buildInfoField(
+                  label: 'Username',
+                  controller: sheetUsernameController,
+                  icon: Icons.alternate_email,
+                  isEditing: true,
+                ),
                 const SizedBox(height: 32),
                 Row(
                   children: [
@@ -232,7 +286,9 @@ class _AccountDetailState extends State<AccountDetail> {
                           foregroundColor: Colors.red[400],
                           side: BorderSide(color: Colors.red[400]!),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: const Text('Cancel'),
                       ),
@@ -242,19 +298,24 @@ class _AccountDetailState extends State<AccountDetail> {
                       child: ElevatedButton(
                         onPressed: () {
                           if (sheetFormKey.currentState!.validate()) {
-                            Navigator.of(context).pop(); 
-                            _saveChanges(sheetFullNameController.text, sheetUsernameController.text);
+                            Navigator.of(context).pop();
+                            _saveChanges(
+                              sheetFullNameController.text,
+                              sheetUsernameController.text,
+                            );
                           }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green[700],
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: const Text('Save'),
                       ),
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -278,24 +339,43 @@ class _AccountDetailState extends State<AccountDetail> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading && _fullNameController.text.isEmpty) { 
-      return const Scaffold(backgroundColor: Color(0xFF151515), body: Center(child: CircularProgressIndicator()));
+    if (_isLoading && _fullNameController.text.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF151515),
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (FirebaseAuth.instance.currentUser == null) {
-      return const Scaffold(backgroundColor: Color(0xFF151515), body: Center(child: Text('Please log in again.', style: TextStyle(color: Colors.white))));
+      return const Scaffold(
+        backgroundColor: Color(0xFF151515),
+        body: Center(
+          child: Text(
+            'Please log in again.',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
     }
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 21, 21, 21),
+      drawer: AppDrawer(),
       appBar: AppBar(
         title: const Text('My Profile'),
         backgroundColor: const Color(0xFF1F1F1F),
         elevation: 0,
-        titleTextStyle: const TextStyle(color: Color(0xfff43f5e), fontSize: 22, fontWeight: FontWeight.bold),
+        titleTextStyle: const TextStyle(
+          color: Color(0xfff43f5e),
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+        ),
         centerTitle: true,
         actions: [
-          IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _showEditProfileSheet),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _showEditProfileSheet,
+          ),
           const SizedBox(width: 8),
         ],
         iconTheme: const IconThemeData(color: Color(0xfff43f5e)),
@@ -303,7 +383,10 @@ class _AccountDetailState extends State<AccountDetail> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 32.0,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -313,11 +396,31 @@ class _AccountDetailState extends State<AccountDetail> {
                   _buildInfoSection(
                     title: 'Profile Information',
                     children: [
-                      _buildInfoField(label: 'Full Name', controller: _fullNameController, icon: Icons.person_outline),
-                      _buildInfoField(label: 'Username', controller: _usernameController, icon: Icons.alternate_email),
-                      _buildInfoField(label: 'Email', controller: _emailController, icon: Icons.email_outlined),
-                      _buildInfoField(label: 'Birth Date', controller: _birthDateController, icon: Icons.cake_outlined),
-                      _buildInfoField(label: 'Gender', controller: _genderController, icon: Icons.person_search_outlined),
+                      _buildInfoField(
+                        label: 'Full Name',
+                        controller: _fullNameController,
+                        icon: Icons.person_outline,
+                      ),
+                      _buildInfoField(
+                        label: 'Username',
+                        controller: _usernameController,
+                        icon: Icons.alternate_email,
+                      ),
+                      _buildInfoField(
+                        label: 'Email',
+                        controller: _emailController,
+                        icon: Icons.email_outlined,
+                      ),
+                      _buildInfoField(
+                        label: 'Birth Date',
+                        controller: _birthDateController,
+                        icon: Icons.cake_outlined,
+                      ),
+                      _buildInfoField(
+                        label: 'Gender',
+                        controller: _genderController,
+                        icon: Icons.person_search_outlined,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 40),
@@ -329,27 +432,48 @@ class _AccountDetailState extends State<AccountDetail> {
             ),
           ),
           if (_isLoading)
-            Container(color: Colors.black.withOpacity(0.5), child: const Center(child: CircularProgressIndicator())),
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
         ],
       ),
     );
   }
-  
+
   Widget _buildProfileHeader() {
-    String initials = _fullNameController.text.isNotEmpty
-      ? _fullNameController.text.trim().split(' ').map((l) => l.isNotEmpty ? l[0] : '').take(2).join().toUpperCase()
-      : 'U';
+    String initials =
+        _fullNameController.text.isNotEmpty
+            ? _fullNameController.text
+                .trim()
+                .split(' ')
+                .map((l) => l.isNotEmpty ? l[0] : '')
+                .take(2)
+                .join()
+                .toUpperCase()
+            : 'U';
     return Column(
       children: [
         CircleAvatar(
           radius: 50,
           backgroundColor: const Color(0xfff43f5e),
-          child: Text(initials, style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold)),
+          child: Text(
+            initials,
+            style: const TextStyle(
+              fontSize: 40,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         Text(
           _fullNameController.text,
-          style: const TextStyle(color: Color(0xfff43f5e), fontSize: 22, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Color(0xfff43f5e),
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -360,15 +484,28 @@ class _AccountDetailState extends State<AccountDetail> {
     );
   }
 
-  Widget _buildInfoSection({required String title, required List<Widget> children}) {
+  Widget _buildInfoSection({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(color: Color(0xfff43f5e), fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xfff43f5e),
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Column(children: children),
         ),
       ],
@@ -439,7 +576,9 @@ class _AccountDetailState extends State<AccountDetail> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.grey[400],
                 side: BorderSide(color: Colors.grey[600]!),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -456,7 +595,9 @@ class _AccountDetailState extends State<AccountDetail> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[800],
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
