@@ -63,6 +63,18 @@ class _MatchScreenState extends State<MatchScreen> {
       _isLoading = true;
     });
 
+    debugPrint("Fetching cards with selected tags: $selectedTags");
+    if (selectedTags.isEmpty) {
+      debugPrint("No tags selected, fetching random images.");
+    } else {
+      debugPrint(
+        "Selected tags: ${selectedTags.where((t) => !t.blacklisted).map((t) => t.tagName).join(', ')}",
+      );
+      debugPrint(
+        "Blacklisted tags: ${selectedTags.where((t) => t.blacklisted).map((t) => t.tagName).join(', ')}",
+      );
+    }
+
     // Logika ini memilih service yang tepat berdasarkan state selectedTags
     final future =
         selectedTags.any((tag) => !tag.blacklisted)
@@ -76,7 +88,12 @@ class _MatchScreenState extends State<MatchScreen> {
                   .map((t) => t.tagName)
                   .toList(),
             )
-            : NekosiaService.getRandomAnimeImages();
+            : NekosiaService.getRandomAnimeImages(
+              selectedTags
+                  .where((t) => t.blacklisted)
+                  .map((t) => t.tagName)
+                  .toList(),
+            );
 
     future
         .then((response) {
@@ -203,7 +220,7 @@ class _MatchScreenState extends State<MatchScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Long press to remove.",
+                      "Tap to blacklist a tag.",
                       style: TextStyle(color: Colors.grey[400], fontSize: 12),
                     ),
                     const SizedBox(height: 8),
@@ -238,6 +255,14 @@ class _MatchScreenState extends State<MatchScreen> {
                                   },
                                   child: Chip(
                                     label: Text(tag.tagName),
+                                    onDeleted: () {
+                                      setModalState(() {
+                                        tagsService.deleteTag(tag.tagName);
+                                        selectedTags.remove(tag);
+                                      });
+                                    },
+                                    deleteIcon: const Icon(Icons.close),
+                                    deleteIconColor: Colors.white,
                                     backgroundColor:
                                         tag.blacklisted
                                             ? Colors.red[700]
