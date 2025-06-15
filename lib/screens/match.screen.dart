@@ -1,4 +1,3 @@
-import 'package:animatch/models/api.model.dart';
 import 'package:animatch/models/card_item.model.dart';
 import 'package:animatch/models/tag_item.model.dart';
 import 'package:animatch/services/match.service.dart';
