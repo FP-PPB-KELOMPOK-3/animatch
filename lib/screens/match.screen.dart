@@ -140,6 +140,7 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   /// Menampilkan bottom sheet untuk memilih dan mengelola filter tag
+  /// Menampilkan bottom sheet untuk memilih dan mengelola filter tag
   void _showTagBottomSheet() async {
     final tagsResponse = await NekosiaService.getTags();
     final allTags = tagsResponse?.tags ?? [];
@@ -151,9 +152,13 @@ class _MatchScreenState extends State<MatchScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.grey[900],
       builder: (context) {
+        // --- DEKLARASI STATE UNTUK SHEET ADA DI SINI ---
+        String searchQuery = '';
+
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            String searchQuery = '';
+            // searchQuery tidak lagi dideklarasikan di sini
+
             final availableTags =
                 allTags.where((tag) {
                   final isNotSelected =
@@ -199,8 +204,7 @@ class _MatchScreenState extends State<MatchScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      // "Tap to blacklist, long press to remove.",
-                      "Long press to remove.",
+                      "Tap to blacklist, long press to remove.",
                       style: TextStyle(color: Colors.grey[400], fontSize: 12),
                     ),
                     const SizedBox(height: 8),
@@ -249,8 +253,12 @@ class _MatchScreenState extends State<MatchScreen> {
                         ),
                     const SizedBox(height: 24),
                     TextField(
-                      onChanged:
-                          (value) => setModalState(() => searchQuery = value),
+                      onChanged: (value) {
+                        // Perbarui nilai searchQuery di dalam setModalState
+                        setModalState(() {
+                          searchQuery = value;
+                        });
+                      },
                       decoration: InputDecoration(
                         hintText: 'Search for tags to add...',
                         hintStyle: TextStyle(color: Colors.grey[400]),
