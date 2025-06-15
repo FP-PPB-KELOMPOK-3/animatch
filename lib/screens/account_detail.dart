@@ -86,6 +86,70 @@ class _AccountDetailState extends State<AccountDetail> {
     }
   }
 
+  // --- FUNGSI BARU UNTUK MENGHAPUS AKUN ---
+  Future<void> _deleteAccount() async {
+    bool? confirmDelete = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1F1F1F),
+        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Colors.white70),
+        title: const Text('Delete Account'),
+        content: const Text('Are you sure? This action is permanent and cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmDelete != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        // Hapus data Firestore terlebih dahulu
+        await _userService.deleteUser(currentUser.uid);
+        // Hapus pengguna dari Authentication
+        await currentUser.delete();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account deleted successfully.'), backgroundColor: Colors.green),
+          );
+          Navigator.pushNamedAndRemoveUntil(context, 'login', (route) => false);
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+         ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This operation is sensitive. Please log out and log back in to delete your account.'), backgroundColor: Colors.orange),
+        );
+      } else {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete account: ${e.message}'), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An unexpected error occurred: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+       if(mounted) {
+        setState(() => _isLoading = false);
+       }
+    }
+  }
+
+
   void _logout() async {
     bool? confirmLogout = await showDialog(
       context: context,
@@ -257,20 +321,8 @@ class _AccountDetailState extends State<AccountDetail> {
                     ],
                   ),
                   const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Logout'),
-                      onPressed: _logout,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red[800],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
+                  // PERUBAHAN UTAMA DI SINI
+                  _buildButtonArea(),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -351,16 +403,15 @@ class _AccountDetailState extends State<AccountDetail> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.grey, width: 1.5),
+            borderSide: const BorderSide(color: Color(0xfff43f5e), width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.red[700]!, width: 1),
           ),
-          // PERUBAHAN UTAMA DI SINI
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.grey, width: 1.5),
+            borderSide: const BorderSide(color: Color(0xfff43f5e), width: 1.5),
           ),
         ),
         validator: (value) {
@@ -370,6 +421,47 @@ class _AccountDetailState extends State<AccountDetail> {
           return null;
         },
       ),
+    );
+  }
+
+  // --- WIDGET AREA TOMBOL DIPERBARUI ---
+  Widget _buildButtonArea() {
+    return Row(
+      children: [
+        // Tombol Delete Account
+        Expanded(
+          child: SizedBox(
+            height: 50,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.delete_forever_outlined),
+              label: const Text('Delete'),
+              onPressed: _deleteAccount,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.grey[400],
+                side: BorderSide(color: Colors.grey[600]!),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Tombol Logout
+        Expanded(
+          child: SizedBox(
+            height: 50,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.logout),
+              label: const Text('Logout'),
+              onPressed: _logout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[800],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
