@@ -1,6 +1,6 @@
 class TagItem {
   final String tagName;
-  final bool blacklisted;
+  bool blacklisted;
 
-  TagItem({required this.tagName, required this.blacklisted});
+  TagItem({required this.tagName, this.blacklisted = false});
 }
