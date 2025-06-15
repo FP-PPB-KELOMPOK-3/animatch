@@ -14,19 +14,19 @@ class _AccountDetailState extends State<AccountDetail> {
   final _formKey = GlobalKey<FormState>();
   late String uid;
 
-  // Controllers untuk setiap field input
+  // Controllers for each input field
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _birthDateController = TextEditingController();
   final TextEditingController _genderController = TextEditingController();
 
-  // Variabel untuk menyimpan data asli, untuk fungsi "Batal"
+  // Variables to store original data for the "Cancel" function
   String _originalFullName = '';
   String _originalUsername = '';
 
   bool _isLoading = true;
-  bool _isEditing = false; // State untuk mengontrol mode edit
+  bool _isEditing = false; // State to control edit mode
 
   @override
   void initState() {
@@ -43,15 +43,14 @@ class _AccountDetailState extends State<AccountDetail> {
   }
 
   Future<void> _loadUserData() async {
+    setState(() => _isLoading = true);
     final userDoc = await _userService.getUserById(uid);
     if (userDoc.exists) {
       final userData = userDoc.data() as Map<String, dynamic>;
       
-      // Simpan data asli
       _originalFullName = userData['fullName'] ?? '';
       _originalUsername = userData['username'] ?? '';
 
-      // Set nilai awal untuk controllers
       _fullNameController.text = _originalFullName;
       _usernameController.text = _originalUsername;
       _emailController.text = userData['email'] ?? '';
@@ -65,45 +64,35 @@ class _AccountDetailState extends State<AccountDetail> {
 
   Future<void> _saveChanges() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Menyimpan perubahan...')),
-      );
+      setState(() => _isLoading = true);
 
       Map<String, dynamic> updatedData = {
-        'fullName': _fullNameController.text,
-        'username': _usernameController.text,
+        'fullName': _fullNameController.text.trim(),
+        'username': _usernameController.text.trim(),
       };
 
       try {
         await _userService.updateUser(uid, updatedData);
         
-        // Perbarui juga data asli setelah berhasil menyimpan
         _originalFullName = _fullNameController.text;
         _originalUsername = _usernameController.text;
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data berhasil diperbarui!'),
-            backgroundColor: Colors.green,
-          ),
+          const SnackBar(content: Text('Profile updated successfully!'), backgroundColor: Colors.green),
         );
-        setState(() {
-          _isEditing = false;
-        });
+        setState(() => _isEditing = false);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memperbarui data: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Failed to update profile: $e'), backgroundColor: Colors.red),
         );
+      } finally {
+        setState(() => _isLoading = false);
       }
     }
   }
 
   void _cancelEditing() {
     setState(() {
-      // Kembalikan nilai controller ke data asli
       _fullNameController.text = _originalFullName;
       _usernameController.text = _originalUsername;
       _isEditing = false;
@@ -111,11 +100,33 @@ class _AccountDetailState extends State<AccountDetail> {
   }
 
   void _logout() async {
-    await FirebaseAuth.instance.signOut();
-    if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, 'login', (route) => false);
+    // Show a confirmation dialog before logging out
+    bool? confirmLogout = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, 'login', (route) => false);
+      }
     }
   }
+
 
   @override
   void dispose() {
@@ -129,122 +140,190 @@ class _AccountDetailState extends State<AccountDetail> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isLoading && _fullNameController.text.isEmpty) { // Initial loading condition
+      return const Scaffold(
+        backgroundColor: Color(0xFF151515),
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (FirebaseAuth.instance.currentUser == null) {
-      return const Scaffold(body: Center(child: Text('Silakan login kembali.')));
+      return const Scaffold(
+        backgroundColor: Color(0xFF151515),
+        body: Center(child: Text('Please log in again.', style: TextStyle(color: Colors.white)))
+      );
     }
 
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 21, 21, 21),
       appBar: AppBar(
-        title: const Text('Account Information'),
-        // Tombol di AppBar dihapus dari sini
+        title: const Text('My Profile'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        titleTextStyle: const TextStyle(color: Color(0xfff43f5e), fontSize: 22, fontWeight: FontWeight.bold),
+        centerTitle: true,
+        actions: [
+          if (!_isEditing)
+            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => setState(() => _isEditing = true))
+          else
+            IconButton(icon: const Icon(Icons.close), onPressed: _cancelEditing),
+          const SizedBox(width: 8), // Memberi sedikit jarak
+        ],
+        iconTheme: const IconThemeData(color: Color(0xfff43f5e)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextFormField(
-                controller: _fullNameController,
-                label: 'Full Name',
-                validator: (value) =>
-                    value!.isEmpty ? 'Nama lengkap tidak boleh kosong' : null,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // PERBAIKAN 2: Mengembalikan header profil
+                  _buildProfileHeader(),
+                  const SizedBox(height: 40),
+                  // The sections are now combined
+                  _buildInfoSection(
+                    title: 'Profile Information',
+                    children: [
+                      _buildInfoField(label: 'Full Name', controller: _fullNameController, icon: Icons.person_outline),
+                      _buildInfoField(label: 'Username', controller: _usernameController, icon: Icons.alternate_email),
+                      _buildInfoField(label: 'Email', controller: _emailController, icon: Icons.email_outlined, editable: false),
+                      _buildInfoField(label: 'Birth Date', controller: _birthDateController, icon: Icons.cake_outlined, editable: false),
+                      _buildInfoField(label: 'Gender', controller: _genderController, icon: Icons.person_search_outlined, editable: false),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  _buildButtonArea(),
+                  const SizedBox(height: 20),
+                ],
               ),
-              const SizedBox(height: 16),
-              _buildTextFormField(
-                controller: _usernameController,
-                label: 'Username',
-                validator: (value) =>
-                    value!.isEmpty ? 'Username tidak boleh kosong' : null,
-              ),
-              const SizedBox(height: 16),
-              _buildTextFormField(
-                  controller: _emailController, label: 'Email', enabled: false),
-              const SizedBox(height: 16),
-              _buildTextFormField(
-                  controller: _birthDateController,
-                  label: 'Birth Date',
-                  enabled: false),
-              const SizedBox(height: 16),
-              _buildTextFormField(
-                  controller: _genderController, label: 'Gender', enabled: false),
-              const SizedBox(height: 32),
-              
-              // --- Area Tombol yang Baru ---
-              _buildButtonArea(),
-            ],
+            ),
           ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+        ],
+      ),
+    );
+  }
+  
+  // Helper untuk Header Profil (dikembalikan)
+  Widget _buildProfileHeader() {
+    String initials = _fullNameController.text.isNotEmpty
+      ? _fullNameController.text.trim().split(' ').map((l) => l.isNotEmpty ? l[0] : '').take(2).join().toUpperCase()
+      : 'U';
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 50,
+          backgroundColor: const Color(0xfff43f5e),
+          child: Text(initials, style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold)),
         ),
+        const SizedBox(height: 16),
+        Text(
+          _fullNameController.text,
+          style: const TextStyle(color: Color(0xfff43f5e), fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '@${_usernameController.text}',
+          style: const TextStyle(color: Colors.grey, fontSize: 16),
+        ),
+      ],
+    );
+  }
+
+  // Helper for info section
+  Widget _buildInfoSection({required String title, required List<Widget> children}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(color: Color(0xfff43f5e), fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
+  // Helper for each info field
+  Widget _buildInfoField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    bool editable = true,
+  }) {
+    bool isEnabled = _isEditing && editable;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        enabled: isEnabled,
+        style: TextStyle(color: isEnabled ? Colors.white : Colors.grey[400]),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.grey),
+          prefixIcon: Icon(icon, color: Colors.grey, size: 20),
+          border: InputBorder.none,
+          filled: true,
+          fillColor: Colors.black.withOpacity(0.2),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xfff43f5e))),
+          disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.red[700]!)),
+          focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.red[700]!)),
+        ),
+        validator: (value) {
+          if (editable && (value == null || value.isEmpty)) {
+            return '$label cannot be empty';
+          }
+          return null;
+        },
       ),
     );
   }
 
-  // Widget untuk membangun area tombol di bagian bawah
+  // Helper for button area
   Widget _buildButtonArea() {
     if (_isEditing) {
-      // Tampilkan tombol "Simpan" dan "Batal" saat mode edit
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          OutlinedButton(
-            onPressed: _cancelEditing,
-            child: const Text('Batal'),
+      return SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.save_alt_outlined),
+          label: const Text('Save Changes'),
+          onPressed: _saveChanges,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green[700],
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          const SizedBox(width: 16),
-          ElevatedButton(
-            onPressed: _saveChanges,
-            child: const Text('Simpan'),
-          ),
-        ],
+        ),
       );
     } else {
-      // Tampilkan tombol "Edit" dan "Logout" saat mode lihat
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _isEditing = true;
-              });
-            },
-            child: const Text('Edit Data'),
+      return SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.logout),
+          label: const Text('Logout'),
+          onPressed: _logout,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red[800],
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          const SizedBox(width: 16),
-          OutlinedButton(
-            onPressed: _logout,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red,
-              side: const BorderSide(color: Colors.red),
-            ),
-            child: const Text('Logout'),
-          ),
-        ],
+        ),
       );
     }
-  }
-
-  Widget _buildTextFormField({
-    required TextEditingController controller,
-    required String label,
-    bool enabled = true,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      enabled: _isEditing && enabled,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        filled: !(_isEditing && enabled),
-        fillColor: Colors.grey[200],
-      ),
-      validator: validator,
-    );
   }
 }
