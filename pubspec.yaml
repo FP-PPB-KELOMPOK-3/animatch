@@ -42,7 +42,13 @@ dependencies:
   date_field: ^6.0.3+1
   http: ^1.4.0
 
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/animatch_logo.png"
+
 dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
   flutter_test:
     sdk: flutter
 
