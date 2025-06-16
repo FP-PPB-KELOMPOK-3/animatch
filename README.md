@@ -7,15 +7,11 @@ Aplikasi *Tinder-like* untuk mencari karakter anime.
 ---
 
 ## 👥 Team Members
-| Name                 | NRP        | Class                              |
-| -------------------- | ---------- | ---------------------------------- |
-| Mikhael Abie Saputra | 5025221113 | Pemrograman Perangkat Bergerak (C) |
-| Adnan Abdullah Juan  | 5025221155 | Pemrograman Perangkat Bergerak (C) |
-| Faiq Lidan Baihaqi   | 5025221294 | Pemrograman Perangkat Bergerak (C) |
-
-- **Mikhael Abie Saputra** – _API service, tags(CRUD) service_
-- **Adnan Abdullah Juan** – _Project setup, Firestore service, match(CRUD) service_
-- **Faiq Lidan Baihaqi** – _FireAuth service, user(CRUD) service, navigation_
+| Name                 | NRP        | Class   | Contribution                                            |
+| -------------------- | ---------- | ------- | ------------------------------------------------------- |
+| Mikhael Abie Saputra | 5025221113 | PPB (C) | _API service, Tags(CRUD) service_                       |
+| Adnan Abdullah Juan  | 5025221155 | PPB (C) | _Project setup, Firestore service, Match(CRUD) service_ |
+| Faiq Lidan Baihaqi   | 5025221294 | PPB (C) | _FireAuth service, User(CRUD) service, Navigation_      |
 
 ---
 
