@@ -27,6 +27,9 @@ Fitur-fitur utama yang ada didalam aplikasi antara lain:
 ### Tech Stack
 ![Image](assets/documentation/Tech_Stack.png)
 
+### Architecture
+![Image](assets/documentation/arsitekturppb.png)
+
 ### Public API
 Semua gambar karakter anime pada aplikasi ini diambil dari API publik **Nekosia.cat**.
 
