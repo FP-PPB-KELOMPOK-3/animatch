@@ -71,10 +71,14 @@ Dokumentasi API publik Nekosia.cat:<br>https://nekosia.cat/documentation?page=ap
     <img src="assets/documentation/match_demo.gif" alt="match demo" width="250"/>
 </div>
 
+_May take some time to load_
+
 ### Tags selection
 <div style="display: flex; justify-content: space-evenly; align-items: center;">
     <img src="assets/documentation/tags_selection.gif" alt="tags selection" width="250"/>
 </div>
+
+_May take some time to load_
 
 ---
 
